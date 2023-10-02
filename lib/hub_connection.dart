@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:logging/logging.dart';
+import 'package:signalr_netcore/http_connection.dart';
 import 'package:tuple/tuple.dart';
 
 import 'default_reconnect_policy.dart';
@@ -398,8 +399,12 @@ class HubConnection {
   Future<void> send(String methodName, {List<Object>? args}) {
     args = args ?? [];
     final t = _replaceStreamingParams(args);
+    MessageHeaders? headers;
+    if (_connection is HttpConnection) {
+      headers = (_connection as HttpConnection).headers;
+    }
     final sendPromise =
-        _sendWithProtocol(_createInvocation(methodName, args, true, t.item2));
+        _sendWithProtocol(_createInvocation(methodName, args, true, t.item2, headers));
 
     _launchStreams(t.item1, sendPromise);
     return sendPromise;
@@ -418,8 +423,12 @@ class HubConnection {
   Future<Object?> invoke(String methodName, {List<Object>? args}) {
     args = args ?? [];
     final t = _replaceStreamingParams(args);
+    MessageHeaders? headers;
+    if (_connection is HttpConnection) {
+      headers = (_connection as HttpConnection).headers;
+    }
     final invocationDescriptor =
-        _createInvocation(methodName, args, false, t.item2);
+        _createInvocation(methodName, args, false, t.item2, headers);
 
     final completer = Completer<Object?>();
 
@@ -881,13 +890,13 @@ class HubConnection {
   }
 
   InvocationMessage _createInvocation(String methodName, List<Object> args,
-      bool nonblocking, List<String> streamIds) {
+      bool nonblocking, List<String> streamIds, MessageHeaders? headers) {
     if (nonblocking) {
       return InvocationMessage(
           target: methodName,
           arguments: args,
           streamIds: streamIds,
-          headers: MessageHeaders(),
+          headers: headers ?? MessageHeaders(),
           invocationId: null);
     } else {
       final invocationId = _invocationId;
@@ -897,7 +906,7 @@ class HubConnection {
           target: methodName,
           arguments: args,
           streamIds: streamIds,
-          headers: MessageHeaders(),
+          headers: headers ?? MessageHeaders(),
           invocationId: invocationId.toString());
     }
   }

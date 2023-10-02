@@ -237,6 +237,9 @@ class HttpConnection implements IConnection {
     _connectionStarted = false;
   }
 
+
+  MessageHeaders? get headers => _options.headers;
+
   @override
   Future<void> start({TransferFormat? transferFormat}) async {
     transferFormat = transferFormat ?? TransferFormat.Binary;
